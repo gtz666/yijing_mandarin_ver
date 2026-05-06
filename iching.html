@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>易經 · I Ching Oracle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold: #c9a84c;
+    --gold-dim: #7a6a4a;
+    --gold-faint: rgba(201,168,76,0.08);
+    --gold-border: rgba(201,168,76,0.2);
+    --bg: #0d0d0f;
+    --text: #e8d5a3;
+    --text-dim: #c8b888;
+    --text-muted: #8a7a5a;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Serif SC', serif;
+    min-height: 100vh;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px 60px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 480px;
+    position: relative;
+  }
+
+  /* ambient glow top */
+  .container::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 600px; height: 300px;
+    background: radial-gradient(ellipse at 50% 0%, rgba(180,140,60,0.07) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Header ── */
+  .header {
+    text-align: center;
+    margin-bottom: 36px;
+    position: relative;
+  }
+
+  .title-zh {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.25em;
+    line-height: 1;
+    margin-bottom: 6px;
+    text-shadow: 0 0 40px rgba(201,168,76,0.25);
+  }
+
+  .title-en {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--gold-dim);
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .header-rule {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0.3;
+  }
+
+  /* ── Question Input ── */
+  .input-wrap {
+    margin-bottom: 28px;
+    position: relative;
+  }
+
+  .input-label {
+    font-size: 10px;
+    color: var(--gold-dim);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .question-input {
+    width: 100%;
+    background: var(--gold-faint);
+    border: 1px solid var(--gold-border);
+    border-radius: 3px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'Noto Serif SC', serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .question-input::placeholder { color: rgba(201,168,76,0.2); }
+  .question-input:focus {
+    border-color: rgba(201,168,76,0.45);
+    background: rgba(201,168,76,0.06);
+  }
+
+  /* ── Wheel ── */
+  .wheel-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+
+  .wheel-wrap {
+    position: relative;
+    width: 260px;
+    height: 260px;
+  }
+
+  #wheel-canvas { display: block; cursor: pointer; }
+
+  .wheel-pointer {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 11px solid transparent;
+    border-right: 11px solid transparent;
+    border-top: 22px solid var(--gold);
+    filter: drop-shadow(0 2px 8px rgba(201,168,76,0.5));
+    z-index: 10;
+  }
+
+  .wheel-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 48px; height: 48px;
+    background: var(--bg);
+    border: 2px solid var(--gold);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    color: var(--gold);
+    z-index: 10;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 0 0 rgba(201,168,76,0);
+  }
+
+  .wheel-center:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+    box-shadow: 0 0 20px rgba(201,168,76,0.3);
+  }
+
+  .cast-btn {
+    background: transparent;
+    border: 1px solid var(--gold);
+    border-radius: 3px;
+    padding: 13px 52px;
+    color: var(--gold);
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.12s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cast-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05));
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .cast-btn:hover::before { opacity: 1; }
+  .cast-btn:hover { box-shadow: 0 0 24px rgba(201,168,76,0.2); }
+  .cast-btn:active { transform: scale(0.97); }
+  .cast-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+  /* ── Divider ── */
+  .divider {
+    display: none;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201,168,76,0.25), transparent);
+    margin: 32px 0;
+  }
+
+  /* ── Result Panel ── */
+  #result-panel {
+    display: none;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  #result-panel.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .question-echo {
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 8px 12px;
+    border-left: 2px solid rgba(201,168,76,0.25);
+    margin-bottom: 20px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Hexagram header */
+  .hex-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  .hex-lines-col {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .yao-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .yao-yang {
+    width: 56px; height: 9px;
+    background: var(--gold);
+    border-radius: 1px;
+  }
+
+  .yao-yin-l, .yao-yin-r {
+    width: 24px; height: 9px;
+    background: var(--gold);
+    border-radius: 1px;
+  }
+
+  .yao-gap { width: 8px; }
+
+  .yao-change {
+    width: 7px; height: 7px;
+    background: #e07840;
+    border-radius: 50%;
+    margin-left: 5px;
+    box-shadow: 0 0 6px rgba(224,120,64,0.5);
+  }
+
+  .hex-meta { flex: 1; }
+
+  .hex-num {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    color: var(--gold-dim);
+    letter-spacing: 0.2em;
+    margin-bottom: 4px;
+  }
+
+  .hex-name {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1.1;
+    margin-bottom: 2px;
+  }
+
+  .hex-glyph {
+    font-size: 32px;
+    color: rgba(201,168,76,0.3);
+    line-height: 1;
+  }
+
+  /* Trigram badges */
+  .trigram-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+
+  .trigram-badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(201,168,76,0.06);
+    border: 1px solid rgba(201,168,76,0.18);
+    border-radius: 3px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: #a8906a;
+  }
+
+  .trigram-sym { font-size: 17px; color: var(--gold); }
+
+  /* Fortune */
+  .fortune-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .fortune-label {
+    font-size: 10px;
+    color: var(--gold-dim);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .fortune-badge {
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+
+  .f-大吉 { background: rgba(201,168,76,0.18); color: #d4aa50; border: 1px solid rgba(201,168,76,0.35); }
+  .f-吉   { background: rgba(100,180,80,0.13);  color: #80c060; border: 1px solid rgba(100,180,80,0.28); }
+  .f-中吉 { background: rgba(70,150,200,0.1);   color: #60a8d0; border: 1px solid rgba(70,150,200,0.22); }
+  .f-中平 { background: rgba(130,130,130,0.1);  color: #888888; border: 1px solid rgba(130,130,130,0.22); }
+  .f-小凶 { background: rgba(220,110,40,0.1);   color: #c07038; border: 1px solid rgba(220,110,40,0.22); }
+  .f-凶   { background: rgba(200,50,50,0.1);    color: #b84848; border: 1px solid rgba(200,50,50,0.22); }
+
+  /* Judgment */
+  .judgment {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-style: italic;
+    line-height: 1.7;
+    padding-left: 12px;
+    border-left: 2px solid rgba(201,168,76,0.25);
+    margin-bottom: 18px;
+  }
+
+  /* Section */
+  .section-title {
+    font-size: 9px;
+    color: rgba(201,168,76,0.4);
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    margin-bottom: 7px;
+  }
+
+  .meaning {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.9;
+    margin-bottom: 18px;
+  }
+
+  .advice-box {
+    background: rgba(201,168,76,0.05);
+    border: 1px solid rgba(201,168,76,0.14);
+    border-radius: 3px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+
+  .advice {
+    font-size: 13px;
+    color: var(--gold);
+    line-height: 1.75;
+  }
+
+  .change-box {
+    background: rgba(224,120,64,0.05);
+    border: 1px solid rgba(224,120,64,0.18);
+    border-radius: 3px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #b06030;
+    line-height: 1.65;
+    margin-bottom: 16px;
+  }
+
+  /* Actions */
+  .action-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .btn-ghost {
+    flex: 1;
+    background: transparent;
+    border: 1px solid rgba(201,168,76,0.22);
+    border-radius: 3px;
+    padding: 10px;
+    color: var(--gold-dim);
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .btn-ghost:hover { border-color: rgba(201,168,76,0.45); color: var(--gold); }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    margin-top: 48px;
+    font-size: 10px;
+    color: rgba(201,168,76,0.2);
+    letter-spacing: 0.2em;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.2); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="header">
+    <div class="title-zh">易 經</div>
+    <div class="title-en">I Ching Oracle · Book of Changes</div>
+    <div class="header-rule"></div>
+  </header>
+
+  <div class="input-wrap">
+    <label class="input-label" for="q">心中所问 · Your Question</label>
+    <input class="question-input" id="q" type="text"
+      placeholder="将问题输入心中，或直接起卦…" maxlength="80" autocomplete="off">
+  </div>
+
+  <div class="wheel-section">
+    <div class="wheel-wrap">
+      <div class="wheel-pointer"></div>
+      <canvas id="wheel-canvas" width="260" height="260"></canvas>
+      <div class="wheel-center" id="center-btn" title="Cast">☯</div>
+    </div>
+    <button class="cast-btn" id="cast-btn">起 卦 · CAST</button>
+  </div>
+
+  <div class="divider" id="divider"></div>
+
+  <div id="result-panel">
+    <div class="question-echo" id="q-echo" style="display:none"></div>
+
+    <div class="hex-header">
+      <div class="hex-lines-col" id="hex-lines"></div>
+      <div class="hex-meta">
+        <div class="hex-num" id="hex-num"></div>
+        <div class="hex-name" id="hex-name"></div>
+      </div>
+      <div class="hex-glyph" id="hex-glyph"></div>
+    </div>
+
+    <div class="trigram-row" id="trigram-row"></div>
+
+    <div class="fortune-row">
+      <span class="fortune-label">运势 Fortune</span>
+      <span class="fortune-badge" id="fortune"></span>
+    </div>
+
+    <div class="judgment" id="judgment"></div>
+
+    <div class="section-title">卦象解读 · Reading</div>
+    <div class="meaning" id="meaning"></div>
+
+    <div class="advice-box">
+      <div class="section-title">建议 · Guidance</div>
+      <div class="advice" id="advice"></div>
+    </div>
+
+    <div class="change-box" id="change-box" style="display:none"></div>
+
+    <div class="action-row">
+      <button class="btn-ghost" id="reset-btn">再卜一卦 · Cast Again</button>
+    </div>
+  </div>
+
+  <footer class="footer">仅供娱乐 · For Entertainment Only</footer>
+
+</div>
+
+<script>
+const TRIGRAMS = {
+  "乾":{lines:[1,1,1],symbol:"☰",nature:"天",attr:"刚健"},
+  "兑":{lines:[1,1,0],symbol:"☱",nature:"泽",attr:"喜悦"},
+  "离":{lines:[1,0,1],symbol:"☲",nature:"火",attr:"附丽"},
+  "震":{lines:[1,0,0],symbol:"☳",nature:"雷",attr:"动"},
+  "巽":{lines:[0,1,1],symbol:"☴",nature:"风",attr:"入"},
+  "坎":{lines:[0,1,0],symbol:"☵",nature:"水",attr:"险陷"},
+  "艮":{lines:[0,0,1],symbol:"☶",nature:"山",attr:"止"},
+  "坤":{lines:[0,0,0],symbol:"☷",nature:"地",attr:"顺"},
+};
+
+const HEX = {
+  "乾乾":{n:1,name:"乾为天",u:"䷀",j:"元亨，利贞。",m:"大吉大利，万象更新。刚健自强，天道运行不息。适合开创事业，积极进取，但需谨守正道，不可骄傲自满。",a:"自强不息，持守正道，时机成熟则大展宏图。",f:"大吉"},
+  "坤坤":{n:2,name:"坤为地",u:"䷁",j:"元亨，利牝马之贞。",m:"柔顺厚德，包容万物。顺势而为，不宜冒进，宜以柔克刚，积蓄力量，等待时机。",a:"厚德载物，顺势而为，以柔克刚，稳扎稳打。",f:"吉"},
+  "坎震":{n:3,name:"水雷屯",u:"䷂",j:"元亨，利贞，勿用有攸往，利建侯。",m:"万物初生，艰难创业。困难重重，但生机勃勃。宜稳扎稳打，不可冒然行动，寻求贵人相助。",a:"初创艰难，广纳贤才，步步为营，前途光明。",f:"中吉"},
+  "艮坎":{n:4,name:"山水蒙",u:"䷃",j:"亨。匪我求童蒙，童蒙求我。",m:"启蒙教化，虚心学习。知识尚浅，需要引导。宜虚心求教，脚踏实地，切勿自以为是。",a:"虚心学习，求贤问道，循序渐进，莫急求成。",f:"中平"},
+  "坎乾":{n:5,name:"水天需",u:"䷄",j:"有孚，光亨，贞吉，利涉大川。",m:"等待时机，以诚相待。时机未到，需耐心等候，保持信心，时机一到则可大展宏图。",a:"耐心等待，蓄势待发，时机一到，一飞冲天。",f:"吉"},
+  "乾坎":{n:6,name:"天水讼",u:"䷅",j:"有孚，窒惕，中吉，终凶。",m:"争讼纠纷，宜和不宜斗。凡事以和为贵，争讼虽有理也难免损伤，宜中道而止，寻求调解。",a:"和为贵，息争止讼，退一步海阔天空。",f:"小凶"},
+  "坤坎":{n:7,name:"地水师",u:"䷆",j:"贞，丈人吉，无咎。",m:"统帅军旅，凝聚力量。需要组织团队，统一目标，纪律严明方能成事。",a:"凝聚人心，统一方向，纪律为先，众志成城。",f:"中吉"},
+  "坎坤":{n:8,name:"水地比",u:"䷇",j:"吉，原筮，元永贞，无咎。",m:"亲比相助，合作共赢。人际关系和谐，宜广结善缘，互相扶持，共同进步。",a:"广结善缘，互相扶持，团结合作，共创佳绩。",f:"吉"},
+  "巽乾":{n:9,name:"风天小畜",u:"䷈",j:"亨，密云不雨，自我西郊。",m:"小有积蓄，蓄势待发。目前积累尚不足以大展拳脚，宜继续蓄积力量，时机未到勿强行。",a:"积累蓄势，韬光养晦，厚积薄发，时机将至。",f:"中吉"},
+  "乾兑":{n:10,name:"天泽履",u:"䷉",j:"履虎尾，不咥人，亨。",m:"如履薄冰，谨慎行事。处境危险，但只要行为端正、小心谨慎，便可化险为夷。",a:"谨慎行事，如履薄冰，端正品行，方可无虞。",f:"中平"},
+  "坤乾":{n:11,name:"地天泰",u:"䷊",j:"小往大来，吉亨。",m:"天地交泰，万事亨通。阴阳相合，上下沟通，一切顺利。是运势极佳之卦，宜积极进取。",a:"把握良机，积极进取，上下齐心，万事俱备。",f:"大吉"},
+  "乾坤":{n:12,name:"天地否",u:"䷋",j:"否之匪人，不利君子贞，大往小来。",m:"天地不交，万物不通。局势阻塞，运势不顺，宜韬光养晦，静待时机，切勿强行冒进。",a:"韬光养晦，静待时机，守正待变，否极泰来。",f:"凶"},
+  "乾离":{n:13,name:"天火同人",u:"䷌",j:"同人于野，亨，利涉大川，利君子贞。",m:"志同道合，团结众人。广泛联合志同道合之人，可以成就大事，共同面对困难。",a:"广结同道，团结合作，志同道合，共谋大业。",f:"大吉"},
+  "离乾":{n:14,name:"火天大有",u:"䷍",j:"元亨。",m:"光明盛大，大丰收之象。拥有丰厚的资源与能量，宜广施仁德，造福众人，切勿独占。",a:"广施恩惠，宽厚待人，盛极而谦，长保昌盛。",f:"大吉"},
+  "坤艮":{n:15,name:"地山谦",u:"䷎",j:"亨，君子有终。",m:"谦逊自处，以退为进。谦虚是最大的美德，越谦逊越能获得他人尊重与支持，终成大器。",a:"谦逊待人，以退为进，虚怀若谷，厚积薄发。",f:"吉"},
+  "震坤":{n:16,name:"雷地豫",u:"䷏",j:"利建侯行师。",m:"欢欣鼓舞，顺势而行。顺应天时地利，凝聚人心，宜组织行动，发挥领导力。",a:"顺势而为，激励众人，把握时机，振奋出发。",f:"吉"},
+  "兑震":{n:17,name:"泽雷随",u:"䷐",j:"元亨，利贞，无咎。",m:"随顺时势，灵活应变。能够顺应形势变化，灵活调整方向，必能获得良好结果。",a:"随机应变，顺势而行，灵活处世，必有收获。",f:"吉"},
+  "艮巽":{n:18,name:"山风蛊",u:"䷑",j:"元亨，利涉大川，先甲三日，后甲三日。",m:"积弊已久，需要整治。旧有问题积累已深，需要大力革新整顿，虽艰难但可转危为安。",a:"勇于改革，整顿积弊，振衰起敝，焕然一新。",f:"中平"},
+  "坤兑":{n:19,name:"地泽临",u:"䷒",j:"元亨，利贞，至于八月有凶。",m:"亲临督导，积极进取。临近成功，宜积极推进，但需注意盛极而衰，不可大意。",a:"积极进取，亲力亲为，把握时机，防止大意。",f:"吉"},
+  "巽坤":{n:20,name:"风地观",u:"䷓",j:"盥而不荐，有孚顒若。",m:"静观其变，审时度势。退而观察，以智慧和诚信影响他人，宜静观后动，不宜鲁莽。",a:"冷静观察，审时度势，以诚感人，静待时机。",f:"中吉"},
+  "离震":{n:21,name:"火雷噬嗑",u:"䷔",j:"亨，利用狱。",m:"排除障碍，刚果决断。遇到阻碍需要果断处理，以雷霆手段清除障碍，方可畅通无阻。",a:"果断决策，排除阻碍，明察秋毫，刚正不阿。",f:"中吉"},
+  "艮离":{n:22,name:"山火贲",u:"䷕",j:"亨，小利有攸往。",m:"文采焕发，注重仪表。外表华美，形式得当，但要注意内在实质，不可只重外表。",a:"内外兼修，文质彬彬，适度修饰，实质为本。",f:"中吉"},
+  "艮坤":{n:23,name:"山地剥",u:"䷖",j:"不利有攸往。",m:"剥落消退，守成待变。小人当道，形势不利，宜收敛锋芒，静待时机，切勿冒进。",a:"韬光养晦，守成待变，忍辱负重，静候转机。",f:"凶"},
+  "坤震":{n:24,name:"地雷复",u:"䷗",j:"亨，出入无疾，朋来无咎。",m:"否极泰来，回归正道。一阳来复，万象更新，困境即将结束，新的开始即将到来。",a:"否极泰来，回归正道，新的开始，充满希望。",f:"吉"},
+  "乾震":{n:25,name:"天雷无妄",u:"䷘",j:"元亨，利贞，其匪正有眚，不利有攸往。",m:"顺天应时，真实无妄。遵循自然规律，诚实守信，不可心存妄念，否则有灾。",a:"顺天应时，诚实守信，心无妄念，方可无咎。",f:"中吉"},
+  "艮乾":{n:26,name:"山天大畜",u:"䷙",j:"利贞，不家食吉，利涉大川。",m:"大量积蓄，厚积薄发。积累了丰富的资源与经验，时机成熟可大展宏图，宜出外闯荡。",a:"厚积薄发，大展宏图，出外闯荡，一展抱负。",f:"大吉"},
+  "艮震":{n:27,name:"山雷颐",u:"䷚",j:"贞吉，观颐，自求口实。",m:"颐养身心，自力更生。注重自身的修养与健康，饮食有节，自食其力，勤俭持家。",a:"自力更生，修身养性，饮食有节，勤俭自持。",f:"中吉"},
+  "兑巽":{n:28,name:"泽风大过",u:"䷛",j:"栋桡，利有攸往，亨。",m:"超出常规，负重过甚。事情超出了正常范围，压力过大，需要果断采取非常措施解决。",a:"当机立断，力挽狂澜，非常时期，用非常手段。",f:"中平"},
+  "坎坎":{n:29,name:"坎为水",u:"䷜",j:"有孚，维心亨，行有尚。",m:"重重险阻，砥砺前行。面临重重困难，但只要内心坚定，诚信处事，终能渡过难关。",a:"坚定信念，诚信处世，砥砺前行，险中求胜。",f:"小凶"},
+  "离离":{n:30,name:"离为火",u:"䷝",j:"利贞，亨，畜牝牛吉。",m:"光明昭著，依附明主。如火焰需要依附薪柴，需寻找正确的依托，发挥光明照耀之德。",a:"依附正道，光明磊落，发挥才能，照亮四方。",f:"吉"},
+  "兑艮":{n:31,name:"泽山咸",u:"䷞",j:"亨，利贞，取女吉。",m:"感应相通，阴阳和合。心灵相通，感情融洽，宜婚嫁情缘，人际关系和谐。",a:"以诚相感，心灵相通，和谐共处，情投意合。",f:"大吉"},
+  "震巽":{n:32,name:"雷风恒",u:"䷟",j:"亨，无咎，利贞，利有攸往。",m:"持之以恒，坚定不移。凡事贵在坚持，持之以恒方可成就大事，不可半途而废。",a:"持之以恒，坚定不移，锲而不舍，金石可镂。",f:"吉"},
+  "乾艮":{n:33,name:"天山遁",u:"䷠",j:"亨，小利贞。",m:"隐退避让，以退为进。时势不利，宜暂时退隐，保存实力，以待时机再度出击。",a:"暂时隐退，保存实力，以退为进，蓄势再发。",f:"中平"},
+  "震乾":{n:34,name:"雷天大壮",u:"䷡",j:"利贞。",m:"阳气旺盛，大展身手。力量充沛，时机大好，宜积极进取，但须注意不可恃强凌弱。",a:"积极进取，大展宏图，刚而有礼，勿恃强凌弱。",f:"吉"},
+  "离坤":{n:35,name:"火地晋",u:"䷢",j:"康侯用锡马蕃庶，昼日三接。",m:"晋升上进，前程似锦。运势上升，受到赏识，宜积极表现，广结善缘，大展才华。",a:"积极表现，广结善缘，把握机遇，一飞冲天。",f:"大吉"},
+  "坤离":{n:36,name:"地火明夷",u:"䷣",j:"利艰贞。",m:"光明受损，忍辱负重。处于黑暗困境之中，需要隐藏才华，忍辱负重，静待黎明。",a:"忍辱负重，隐而不发，韬光养晦，静待黎明。",f:"小凶"},
+  "巽离":{n:37,name:"风火家人",u:"䷤",j:"利女贞。",m:"家庭和睦，各守其位。家庭关系融洽，各司其职，家和万事兴，宜关注家庭关系。",a:"家和万事兴，各守其位，齐心协力，共创美满。",f:"吉"},
+  "离兑":{n:38,name:"火泽睽",u:"䷥",j:"小事吉。",m:"背离乖违，分歧矛盾。彼此意见相左，产生隔阂，宜在小事上寻求共识，逐步化解矛盾。",a:"求同存异，化解矛盾，小处着手，逐步和解。",f:"中平"},
+  "坎艮":{n:39,name:"水山蹇",u:"䷦",j:"利西南，不利东北，利见大人，贞吉。",m:"行路艰难，寻求援助。前进道路险阻重重，宜退守待援，寻求贵人帮助，不可独自硬闯。",a:"审时度势，寻求援助，以退为进，待机而动。",f:"小凶"},
+  "震坎":{n:40,name:"雷水解",u:"䷧",j:"利西南，无所往，其来复吉，有攸往夙吉。",m:"解脱困境，重获自由。危机解除，困境消散，宜趁势而上，迅速行动，把握解脱后的机遇。",a:"把握时机，迅速行动，解除困境，重获新生。",f:"吉"},
+  "艮兑":{n:41,name:"山泽损",u:"䷨",j:"有孚，元吉，无咎，可贞，利有攸往。",m:"减损自身以换取长远利益，以诚取信。",a:"以诚为本，适当舍弃，以退为进，长远谋划。",f:"中吉"},
+  "巽震":{n:42,name:"风雷益",u:"䷩",j:"利有攸往，利涉大川。",m:"增益丰盈，广施恩惠。运势大好，受益良多，宜把握时机积极行动，同时也要广施恩惠。",a:"把握机遇，积极行动，广施恩惠，惠及众生。",f:"大吉"},
+  "兑乾":{n:43,name:"泽天夬",u:"䷪",j:"扬于王庭，孚号，有厉，告自邑，不利即戎，利有攸往。",m:"需要果断地揭示并排除隐患，但须以正当手段，不可以暴制暴。",a:"果断决策，公正处事，正面迎击，以德服人。",f:"中吉"},
+  "乾巽":{n:44,name:"天风姤",u:"䷫",j:"女壮，勿用取女。",m:"不期而遇，防止诱惑。意外相遇，需警惕诱惑和表面美好的事物，防止被小人迷惑。",a:"保持警惕，辨别是非，防止诱惑，守正不移。",f:"中平"},
+  "兑坤":{n:45,name:"泽地萃",u:"䷬",j:"亨，王假有庙，利见大人，亨，利贞，用大牲吉，利有攸往。",m:"众人汇聚，力量集中，宜在领袖带领下团结众人共同行动。",a:"凝聚人心，团结众人，共同行动，力量倍增。",f:"吉"},
+  "坤巽":{n:46,name:"地风升",u:"䷭",j:"元亨，用见大人，勿恤，南征吉。",m:"步步高升，渐进成长。如植物破土生长，循序渐进，持续努力，终将升华到更高境界。",a:"循序渐进，持续努力，步步高升，终达顶峰。",f:"大吉"},
+  "兑坎":{n:47,name:"泽水困",u:"䷮",j:"亨，贞大人吉，无咎，有言不信。",m:"困顿穷乏，坚守正道。处于困境之中，言语无力，需以行动证明自身，坚持正道终有出路。",a:"坚守正道，以行代言，困境只是暂时，坚持必有出路。",f:"小凶"},
+  "坎巽":{n:48,name:"水风井",u:"䷯",j:"改邑不改井，无丧无得，往来井井。",m:"源泉不竭，取之不尽。如同水井，默默奉献，滋养众生，宜发挥自身价值，服务他人。",a:"发挥价值，服务众人，源源不断，贡献不竭。",f:"中吉"},
+  "兑离":{n:49,name:"泽火革",u:"䷰",j:"己日乃孚，元亨，利贞，悔亡。",m:"时机成熟，需要大胆变革，破旧立新，顺应民心，必然成功。",a:"顺势变革，破旧立新，大胆改革，时机已至。",f:"吉"},
+  "离巽":{n:50,name:"火风鼎",u:"䷱",j:"元吉，亨。",m:"鼎新革故，文明昌盛。稳定秩序，推陈出新，积极进取，文化事业蓬勃发展。",a:"推陈出新，稳中求进，文明昌盛，事业有成。",f:"大吉"},
+  "震震":{n:51,name:"震为雷",u:"䷲",j:"亨，震来虩虩，笑言哑哑，震惊百里，不丧匕鬯。",m:"震动警醒，自省自励。突如其来的震惊考验，能够在惊恐中保持镇定，化险为夷。",a:"临危不乱，镇定自若，以警示为动力，奋发图强。",f:"中平"},
+  "艮艮":{n:52,name:"艮为山",u:"䷳",j:"艮其背，不获其身，行其庭，不见其人，无咎。",m:"静止安定，适可而止。知道何时该停止是大智慧，静心思考，不受外界干扰，自得其乐。",a:"适可而止，静心思考，知止而安，自得其乐。",f:"中吉"},
+  "巽艮":{n:53,name:"风山渐",u:"䷴",j:"女归吉，利贞。",m:"循序渐进，水到渠成。凡事按部就班，不可急于求成，循序渐进终将水到渠成。",a:"循序渐进，按部就班，稳扎稳打，水到渠成。",f:"吉"},
+  "震兑":{n:54,name:"雷泽归妹",u:"䷵",j:"征凶，无攸利。",m:"感情或归宿问题需谨慎，守本分、知进退，勿强求，否则有失。",a:"谨守本分，知进退，顺势而为，勿强求结果。",f:"中平"},
+  "震离":{n:55,name:"雷火丰",u:"䷶",j:"亨，王假之，勿忧，宜日中。",m:"处于事业高峰，光辉灿烂，宜大展宏图，但需居安思危，防盛极而衰。",a:"乘势而上，大展宏图，居安思危，防止骄傲自满。",f:"吉"},
+  "离艮":{n:56,name:"火山旅",u:"䷷",j:"小亨，旅贞吉。",m:"旅行羁旅，谨慎处世。处于漂泊状态，需谨言慎行，低调处世，广结善缘，方可平安。",a:"低调处世，谨言慎行，广结善缘，旅途平安。",f:"中平"},
+  "巽巽":{n:57,name:"巽为风",u:"䷸",j:"小亨，利有攸往，利见大人。",m:"以柔顺之道渗透影响，宜寻求贤人指引，以谦逊之心达成目标。",a:"以柔克刚，谦逊处世，寻求贤才，潜移默化。",f:"中吉"},
+  "兑兑":{n:58,name:"兑为泽",u:"䷹",j:"亨，利贞。",m:"充满喜悦，人际关系和谐，以诚相待，广结善缘，事业顺利。",a:"广结善缘，以诚相待，喜悦处世，和谐共赢。",f:"吉"},
+  "巽坎":{n:59,name:"风水涣",u:"䷺",j:"亨，王假有庙，利涉大川，利贞。",m:"涣散的局面需要以诚信和精神力量重新凝聚，宜寻求精神信仰。",a:"凝聚人心，精诚团结，以诚信化解涣散，重建秩序。",f:"中吉"},
+  "坎兑":{n:60,name:"水泽节",u:"䷻",j:"亨，苦节不可贞。",m:"凡事需要节制，适可而止，过度节制反而有害，把握平衡最重要。",a:"节制有度，把握分寸，适可而止，平衡为要。",f:"中吉"},
+  "巽兑":{n:61,name:"风泽中孚",u:"䷼",j:"豚鱼吉，利涉大川，利贞。",m:"以真诚之心感化他人，内外一致，言行相符，可以感动金石。",a:"以诚待人，言行一致，诚信感人，无往不利。",f:"大吉"},
+  "震艮":{n:62,name:"雷山小过",u:"䷽",j:"亨，利贞，可小事，不可大事，飞鸟遗之音，不宜上，宜下，大吉。",m:"目前只宜做小事，不可贪大，行事需低调谨慎，才能平安顺利。",a:"谨小慎微，量力而行，低调处事，稳中求进。",f:"中平"},
+  "坎离":{n:63,name:"水火既济",u:"䷾",j:"亨，小利贞，初吉终乱。",m:"目标已经达成，但需警惕盛极而衰，居安思危，巩固成果。",a:"居安思危，巩固成果，防患未然，保持警觉。",f:"吉"},
+  "离坎":{n:64,name:"火水未济",u:"䷿",j:"亨，小狐汔济，濡其尾，无攸利。",m:"事情尚未完成，仍需谨慎努力，曙光在望，坚持到底终可成功。",a:"继续努力，谨慎前行，曙光在望，坚持到底。",f:"中吉"},
+};
+
+function trigramName(three) {
+  for (const [k,v] of Object.entries(TRIGRAMS))
+    if (v.lines.every((b,i)=>b===three[i])) return k;
+  return "坤";
+}
+
+function castCoins() {
+  const lines=[], changes=[];
+  for (let i=0;i<6;i++){
+    const t=[0,0,0].reduce(s=>s+(Math.random()<.5?2:3),0);
+    if(t===6){lines.push(0);changes.push(i);}
+    else if(t===7)lines.push(1);
+    else if(t===8)lines.push(0);
+    else{lines.push(1);changes.push(i);}
+  }
+  return {lines,changes};
+}
+
+function getHex(lines){
+  const lo=trigramName(lines.slice(0,3)), up=trigramName(lines.slice(3));
+  return {up,lo,d:HEX[up+lo]||{n:0,name:"未知卦",u:"？",j:"",m:"此卦象待完善。",a:"审时度势。",f:"中平"}};
+}
+
+// ── Canvas wheel ──
+const cv=document.getElementById('wheel-canvas');
+const cx=cv.getContext('2d');
+const W=260,R=122,CX=W/2,CY=W/2;
+const SYMS=["☰","☱","☲","☳","☴","☵","☶","☷"];
+const SECTOR_N=24;
+let angle=0, spinning=false;
+
+function drawWheel(a){
+  cx.clearRect(0,0,W,W);
+  const sa=(2*Math.PI)/SECTOR_N;
+  for(let i=0;i<SECTOR_N;i++){
+    const s=a+i*sa, e=s+sa;
+    // sector fill
+    cx.beginPath(); cx.moveTo(CX,CY); cx.arc(CX,CY,R,s,e); cx.closePath();
+    const shade = i%2===0?'#181508':'#141204';
+    cx.fillStyle=shade; cx.fill();
+    // sector border
+    cx.beginPath(); cx.moveTo(CX,CY); cx.arc(CX,CY,R,s,e); cx.closePath();
+    cx.strokeStyle='rgba(201,168,76,0.3)'; cx.lineWidth=0.7; cx.stroke();
+    // symbol
+    const mid=s+sa/2;
+    const tx=CX+R*0.66*Math.cos(mid), ty=CY+R*0.66*Math.sin(mid);
+    cx.save(); cx.translate(tx,ty); cx.rotate(mid+Math.PI/2);
+    cx.fillStyle='rgba(201,168,76,0.55)'; cx.font='12px serif';
+    cx.textAlign='center'; cx.textBaseline='middle';
+    cx.fillText(SYMS[i%8],0,0); cx.restore();
+  }
+  // outer ring
+  cx.beginPath(); cx.arc(CX,CY,R,0,2*Math.PI);
+  cx.strokeStyle='rgba(201,168,76,0.55)'; cx.lineWidth=1.5; cx.stroke();
+  // inner rings
+  [0.38,0.55,0.75].forEach(r=>{
+    cx.beginPath(); cx.arc(CX,CY,R*r,0,2*Math.PI);
+    cx.strokeStyle='rgba(201,168,76,0.08)'; cx.lineWidth=0.5; cx.stroke();
+  });
+}
+
+drawWheel(0);
+
+function doSpin(){
+  if(spinning)return;
+  spinning=true;
+  document.getElementById('cast-btn').disabled=true;
+  document.getElementById('result-panel').style.display='none';
+  document.getElementById('result-panel').classList.remove('visible');
+  document.getElementById('divider').style.display='none';
+
+  const result=castCoins();
+  const total=(5+Math.random()*5)*2*Math.PI;
+  const dur=2600+Math.random()*900;
+  const t0=performance.now(), a0=angle;
+  const ease=t=>1-Math.pow(1-t,3.2);
+
+  (function frame(now){
+    const p=Math.min((now-t0)/dur,1);
+    angle=a0+total*ease(p);
+    drawWheel(angle);
+    if(p<1){requestAnimationFrame(frame);}
+    else{
+      spinning=false;
+      document.getElementById('cast-btn').disabled=false;
+      showResult(result);
+    }
+  })(performance.now());
+}
+
+function showResult({lines,changes}){
+  const {up,lo,d}=getHex(lines);
+  document.getElementById('divider').style.display='block';
+  const panel=document.getElementById('result-panel');
+  panel.style.display='block';
+  setTimeout(()=>panel.classList.add('visible'),10);
+
+  const q=document.getElementById('q').value.trim();
+  const qe=document.getElementById('q-echo');
+  if(q){qe.style.display='block';qe.textContent='所问：'+q;}
+  else qe.style.display='none';
+
+  document.getElementById('hex-num').textContent=`第 ${d.n} 卦`;
+  document.getElementById('hex-name').textContent=d.name;
+  document.getElementById('hex-glyph').textContent=d.u;
+
+  // yao lines
+  const lc=document.getElementById('hex-lines'); lc.innerHTML='';
+  for(let i=5;i>=0;i--){
+    const row=document.createElement('div'); row.className='yao-row';
+    if(lines[i]===1){
+      const b=document.createElement('div'); b.className='yao-yang'; row.appendChild(b);
+    } else {
+      ['yao-yin-l','yao-gap','yao-yin-r'].forEach(cls=>{
+        const b=document.createElement('div'); b.className=cls; row.appendChild(b);
+      });
+    }
+    if(changes.includes(i)){
+      const dot=document.createElement('div'); dot.className='yao-change'; row.appendChild(dot);
+    }
+    lc.appendChild(row);
+  }
+
+  const ut=TRIGRAMS[up], lt=TRIGRAMS[lo];
+  document.getElementById('trigram-row').innerHTML=
+    `<div class="trigram-badge"><span class="trigram-sym">${ut.symbol}</span>上卦·${up}（${ut.nature}）</div>
+     <div class="trigram-badge"><span class="trigram-sym">${lt.symbol}</span>下卦·${lo}（${lt.nature}）</div>`;
+
+  const fb=document.getElementById('fortune');
+  fb.textContent=d.f; fb.className='fortune-badge f-'+d.f;
+
+  document.getElementById('judgment').textContent=d.j;
+  document.getElementById('meaning').textContent=d.m;
+  document.getElementById('advice').textContent=d.a;
+
+  const cb=document.getElementById('change-box');
+  if(changes.length){
+    const yn=["初","二","三","四","五","上"];
+    cb.style.display='block';
+    cb.textContent='✦ 变爻：'+changes.map(i=>yn[i]+'爻').join('、')+'——运势将有转变，变中求变，请结合实际细思。';
+  } else cb.style.display='none';
+
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+document.getElementById('cast-btn').addEventListener('click',doSpin);
+document.getElementById('center-btn').addEventListener('click',doSpin);
+document.getElementById('reset-btn').addEventListener('click',()=>{
+  document.getElementById('result-panel').classList.remove('visible');
+  setTimeout(()=>{
+    document.getElementById('result-panel').style.display='none';
+    document.getElementById('divider').style.display='none';
+    document.getElementById('q').value='';
+    window.scrollTo({top:0,behavior:'smooth'});
+  },400);
+});
+document.getElementById('q').addEventListener('keydown',e=>{
+  if(e.key==='Enter') doSpin();
+});
+</script>
+</body>
+</html>
