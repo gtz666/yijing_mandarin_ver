@@ -1,4 +1,4 @@
-# 易经娱乐转盘 I Ching Fortuen Wheel
+# 易经娱乐转盘 I Ching Fortune Wheel
 
 - 对易经感兴趣，想搞清楚六十四卦的结构和逻辑，顺手写了个程序
 
